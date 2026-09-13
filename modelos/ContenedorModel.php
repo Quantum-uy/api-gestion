@@ -11,7 +11,10 @@ class ContenedorModel
 
     public function getAll()
     {
-        $sql = "SELECT * FROM contenedor ORDER BY id_contenedor DESC";
+        $sql = "SELECT c.*, tr.nombre AS tipo_residuo
+                FROM contenedor c
+                LEFT JOIN tipo_residuo tr ON c.id_tipo_residuo = tr.id_tipo_residuo
+                ORDER BY c.id_contenedor DESC";
         $result = mysqli_query($this->conn, $sql);
         $contenedores = [];
 
@@ -24,7 +27,11 @@ class ContenedorModel
 
     public function getById($id)
     {
-        $stmt = mysqli_prepare($this->conn, "SELECT * FROM contenedor WHERE id_contenedor = ?");
+        $stmt = mysqli_prepare($this->conn,
+            "SELECT c.*, tr.nombre AS tipo_residuo
+             FROM contenedor c
+             LEFT JOIN tipo_residuo tr ON c.id_tipo_residuo = tr.id_tipo_residuo
+             WHERE c.id_contenedor = ?");
         mysqli_stmt_bind_param($stmt, "i", $id);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
@@ -35,17 +42,18 @@ class ContenedorModel
     public function create($data)
     {
         $stmt = mysqli_prepare($this->conn,
-            "INSERT INTO contenedor (ubicacion, zona, estado, tipo_residuo)
+            "INSERT INTO contenedor (ubicacion, zona, estado, id_tipo_residuo)
              VALUES (?, ?, ?, ?)"
         );
 
         $estado = $data['estado'] ?? 'funcional';
+        $id_tipo = !empty($data['id_tipo_residuo']) ? $data['id_tipo_residuo'] : null;
 
-        mysqli_stmt_bind_param($stmt, "ssss",
+        mysqli_stmt_bind_param($stmt, "sssi",
             $data['ubicacion'],
             $data['zona'],
             $estado,
-            $data['tipo_residuo']
+            $id_tipo
         );
 
         if (mysqli_stmt_execute($stmt)) {
@@ -58,15 +66,17 @@ class ContenedorModel
     public function update($id, $data)
     {
         $stmt = mysqli_prepare($this->conn,
-            "UPDATE contenedor SET ubicacion = ?, zona = ?, estado = ?, tipo_residuo = ?
+            "UPDATE contenedor SET ubicacion = ?, zona = ?, estado = ?, id_tipo_residuo = ?
              WHERE id_contenedor = ?"
         );
 
-        mysqli_stmt_bind_param($stmt, "ssssi",
+        $id_tipo = !empty($data['id_tipo_residuo']) ? $data['id_tipo_residuo'] : null;
+
+        mysqli_stmt_bind_param($stmt, "sssii",
             $data['ubicacion'],
             $data['zona'],
             $data['estado'],
-            $data['tipo_residuo'],
+            $id_tipo,
             $id
         );
 

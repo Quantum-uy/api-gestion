@@ -31,12 +31,11 @@ class CentroAcopioController
     {
         if (empty($data['nombre'])) {
             http_response_code(400);
-            echo json_encode(["error" => "El campo nombre es obligatorio"]);
+            echo json_encode(["error" => "Falta campo obligatorio: nombre"]);
             return;
         }
         $result = $this->modelo->create($data);
-        if (isset($result['error'])) http_response_code(400);
-        else http_response_code(201);
+        http_response_code(isset($result['error']) ? 400 : 201);
         echo json_encode($result);
     }
 
@@ -44,7 +43,7 @@ class CentroAcopioController
     {
         if (empty($data['nombre'])) {
             http_response_code(400);
-            echo json_encode(["error" => "El campo nombre es obligatorio"]);
+            echo json_encode(["error" => "Falta campo obligatorio: nombre"]);
             return;
         }
         $result = $this->modelo->update($id, $data);

@@ -31,20 +31,19 @@ class MaquinariaController
     {
         if (empty($data['tipo'])) {
             http_response_code(400);
-            echo json_encode(["error" => "El campo tipo es obligatorio"]);
+            echo json_encode(["error" => "Falta campo obligatorio: tipo"]);
             return;
         }
         $result = $this->modelo->create($data);
-        if (isset($result['error'])) http_response_code(400);
-        else http_response_code(201);
+        http_response_code(isset($result['error']) ? 400 : 201);
         echo json_encode($result);
     }
 
     public function update($id, $data)
     {
-        if (empty($data['tipo']) || empty($data['estado'])) {
+        if (empty($data['tipo'])) {
             http_response_code(400);
-            echo json_encode(["error" => "Faltan campos: tipo, estado"]);
+            echo json_encode(["error" => "Falta campo obligatorio: tipo"]);
             return;
         }
         $result = $this->modelo->update($id, $data);

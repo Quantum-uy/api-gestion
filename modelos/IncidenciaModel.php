@@ -11,7 +11,12 @@ class IncidenciaModel
 
     public function getAll()
     {
-        $sql = "SELECT * FROM incidencia ORDER BY id_incidencia DESC";
+        $sql = "SELECT i.*, c.ubicacion AS contenedor_ubicacion, c.zona AS contenedor_zona,
+                       u.nombre AS conductor_nombre, u.apellido AS conductor_apellido
+                FROM incidencia i
+                LEFT JOIN contenedor c ON i.id_contenedor = c.id_contenedor
+                LEFT JOIN usuario u ON i.id_conductor_asignado = u.id_usuario
+                ORDER BY i.id_incidencia DESC";
         $result = mysqli_query($this->conn, $sql);
         $incidencias = [];
 
@@ -35,18 +40,22 @@ class IncidenciaModel
     public function create($data)
     {
         $stmt = mysqli_prepare($this->conn,
-            "INSERT INTO incidencia (tipo, descripcion, ubicacion, zona, imagen, fecha_reporte, estado)
-             VALUES (?, ?, ?, ?, ?, CURDATE(), 'abierta')"
+            "INSERT INTO incidencia (tipo, descripcion, ubicacion, zona, imagen, fecha_reporte, estado, id_contenedor, id_conductor_asignado)
+             VALUES (?, ?, ?, ?, ?, CURDATE(), 'abierta', ?, ?)"
         );
 
         $imagen = $data['imagen'] ?? null;
+        $id_contenedor = !empty($data['id_contenedor']) ? $data['id_contenedor'] : null;
+        $id_conductor = !empty($data['id_conductor_asignado']) ? $data['id_conductor_asignado'] : null;
 
-        mysqli_stmt_bind_param($stmt, "sssss",
+        mysqli_stmt_bind_param($stmt, "sssssii",
             $data['tipo'],
             $data['descripcion'],
             $data['ubicacion'],
             $data['zona'],
-            $imagen
+            $imagen,
+            $id_contenedor,
+            $id_conductor
         );
 
         if (mysqli_stmt_execute($stmt)) {
