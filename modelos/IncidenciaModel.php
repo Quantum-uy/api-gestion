@@ -39,24 +39,29 @@ class IncidenciaModel
 
     public function create($data)
     {
-        $stmt = mysqli_prepare($this->conn,
-            "INSERT INTO incidencia (tipo, descripcion, ubicacion, zona, imagen, fecha_reporte, estado, id_contenedor, id_conductor_asignado)
-             VALUES (?, ?, ?, ?, ?, CURDATE(), 'abierta', ?, ?)"
-        );
-
         $imagen = $data['imagen'] ?? null;
-        $id_contenedor = !empty($data['id_contenedor']) ? $data['id_contenedor'] : null;
-        $id_conductor = !empty($data['id_conductor_asignado']) ? $data['id_conductor_asignado'] : null;
+        $id_contenedor = !empty($data['id_contenedor']) ? (int)$data['id_contenedor'] : null;
+        $id_conductor = !empty($data['id_conductor_asignado']) ? (int)$data['id_conductor_asignado'] : null;
 
-        mysqli_stmt_bind_param($stmt, "sssssii",
+        $sql = "INSERT INTO incidencia (tipo, descripcion, ubicacion, zona, imagen, fecha_reporte, estado, id_contenedor, id_conductor_asignado)
+                VALUES (?, ?, ?, ?, ?, CURDATE(), 'abierta', " .
+                ($id_contenedor !== null ? "?" : "NULL") . ", " .
+                ($id_conductor !== null ? "?" : "NULL") . ")";
+
+        $stmt = mysqli_prepare($this->conn, $sql);
+
+        $types = "sssss";
+        $params = [
             $data['tipo'],
-            $data['descripcion'],
+            $data['descripcion'] ?? '',
             $data['ubicacion'],
             $data['zona'],
-            $imagen,
-            $id_contenedor,
-            $id_conductor
-        );
+            $imagen
+        ];
+        if ($id_contenedor !== null) { $types .= "i"; $params[] = $id_contenedor; }
+        if ($id_conductor !== null) { $types .= "i"; $params[] = $id_conductor; }
+
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
 
         if (mysqli_stmt_execute($stmt)) {
             return [
@@ -68,15 +73,29 @@ class IncidenciaModel
         return ["error" => "No se pudo registrar la incidencia"];
     }
 
-    public function updateEstado($id, $estado)
+    public function updateEstado($id, $estado, $id_conductor = null)
     {
         $fechaRes = ($estado === 'resuelta') ? date('Y-m-d') : null;
 
-        $stmt = mysqli_prepare($this->conn,
-            "UPDATE incidencia SET estado = ?, fecha_resolucion = ? WHERE id_incidencia = ?"
-        );
-
-        mysqli_stmt_bind_param($stmt, "ssi", $estado, $fechaRes, $id);
+        if ($id_conductor !== null) {
+            if ($id_conductor == 0) {
+                $stmt = mysqli_prepare($this->conn,
+                    "UPDATE incidencia SET estado = ?, fecha_resolucion = ?, id_conductor_asignado = NULL WHERE id_incidencia = ?"
+                );
+                mysqli_stmt_bind_param($stmt, "ssi", $estado, $fechaRes, $id);
+            } else {
+                $stmt = mysqli_prepare($this->conn,
+                    "UPDATE incidencia SET estado = ?, fecha_resolucion = ?, id_conductor_asignado = ? WHERE id_incidencia = ?"
+                );
+                $cond = (int)$id_conductor;
+                mysqli_stmt_bind_param($stmt, "ssii", $estado, $fechaRes, $cond, $id);
+            }
+        } else {
+            $stmt = mysqli_prepare($this->conn,
+                "UPDATE incidencia SET estado = ?, fecha_resolucion = ? WHERE id_incidencia = ?"
+            );
+            mysqli_stmt_bind_param($stmt, "ssi", $estado, $fechaRes, $id);
+        }
 
         if (mysqli_stmt_execute($stmt)) {
             return ["success" => "Estado actualizado"];

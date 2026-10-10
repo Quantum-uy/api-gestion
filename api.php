@@ -58,7 +58,6 @@ switch ($method) {
             requiereRol(['administrador']);
             $contenedorCtrl->create($data);
         } elseif ($endpoint === '/incidencias') {
-            requiereRol(['administrador', 'operario', 'conductor', 'peon']);
             $incidenciaCtrl->create($data);
         } elseif ($endpoint === '/rutas') {
             requiereRol(['administrador']);
@@ -82,7 +81,7 @@ switch ($method) {
             requiereRol(['administrador']);
             $contenedorCtrl->update($matches[1], $data);
         } elseif (preg_match('/^\/incidencias\/(\d+)$/', $endpoint, $matches)) {
-            requiereRol(['administrador', 'operario']);
+            requiereRol(['administrador', 'operario', 'conductor', 'peon']);
             $incidenciaCtrl->updateEstado($matches[1], $data);
         } elseif (preg_match('/^\/rutas\/(\d+)$/', $endpoint, $matches)) {
             requiereRol(['administrador']);

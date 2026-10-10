@@ -55,7 +55,8 @@ class IncidenciaController
             return;
         }
 
-        $result = $this->modelo->updateEstado($id, $data['estado']);
+        $id_conductor = array_key_exists('id_conductor_asignado', $data) ? $data['id_conductor_asignado'] : null;
+        $result = $this->modelo->updateEstado($id, $data['estado'], $id_conductor);
 
         if (isset($result['error'])) {
             http_response_code(400);
