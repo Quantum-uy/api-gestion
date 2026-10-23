@@ -7,32 +7,44 @@ class RutaModel {
     }
 
     public function create($data) {
-        $stmt = $this->conn->prepare(
-            "INSERT INTO ruta (nombre, zona, numero, descripcion, color, estado, id_conductor, id_camion) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-        );
         $color  = $data['color']  ?? '#1a5c52';
         $estado = $data['estado'] ?? 'activa';
-        $numero = $data['numero'] ?? 1;
-        $id_conductor = !empty($data['id_conductor']) ? $data['id_conductor'] : null;
-        $id_camion = !empty($data['id_camion']) ? $data['id_camion'] : null;
-        $stmt->bind_param('ssisssii',
-            $data['nombre'], $data['zona'], $numero, $data['descripcion'], $color, $estado, $id_conductor, $id_camion
+        $numero = (int)($data['numero'] ?? 1);
+        $id_conductor = !empty($data['id_conductor']) ? (int)$data['id_conductor'] : null;
+        $id_camion = !empty($data['id_camion']) ? (int)$data['id_camion'] : null;
+        $id_centro = !empty($data['id_centro_destino']) ? (int)$data['id_centro_destino'] : null;
+
+        $cond_sql = $id_conductor !== null ? $id_conductor : 'NULL';
+        $cam_sql  = $id_camion !== null ? $id_camion : 'NULL';
+        $centro_sql = $id_centro !== null ? $id_centro : 'NULL';
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO ruta (nombre, zona, numero, descripcion, color, estado, id_conductor, id_camion, id_centro_destino) VALUES (?, ?, ?, ?, ?, ?, $cond_sql, $cam_sql, $centro_sql)"
+        );
+        $stmt->bind_param('ssisss',
+            $data['nombre'], $data['zona'], $numero, $data['descripcion'], $color, $estado
         );
         $stmt->execute();
         return $this->conn->insert_id;
     }
 
     public function update($id, $data) {
-        $stmt = $this->conn->prepare(
-            "UPDATE ruta SET nombre=?, zona=?, numero=?, descripcion=?, color=?, estado=?, id_conductor=?, id_camion=? WHERE id_ruta=?"
-        );
         $color  = $data['color']  ?? '#1a5c52';
         $estado = $data['estado'] ?? 'activa';
-        $numero = $data['numero'] ?? 1;
-        $id_conductor = !empty($data['id_conductor']) ? $data['id_conductor'] : null;
-        $id_camion = !empty($data['id_camion']) ? $data['id_camion'] : null;
-        $stmt->bind_param('ssisssiii',
-            $data['nombre'], $data['zona'], $numero, $data['descripcion'], $color, $estado, $id_conductor, $id_camion, $id
+        $numero = (int)($data['numero'] ?? 1);
+        $id_conductor = !empty($data['id_conductor']) ? (int)$data['id_conductor'] : null;
+        $id_camion = !empty($data['id_camion']) ? (int)$data['id_camion'] : null;
+        $id_centro = !empty($data['id_centro_destino']) ? (int)$data['id_centro_destino'] : null;
+
+        $cond_sql = $id_conductor !== null ? $id_conductor : 'NULL';
+        $cam_sql  = $id_camion !== null ? $id_camion : 'NULL';
+        $centro_sql = $id_centro !== null ? $id_centro : 'NULL';
+
+        $stmt = $this->conn->prepare(
+            "UPDATE ruta SET nombre=?, zona=?, numero=?, descripcion=?, color=?, estado=?, id_conductor=$cond_sql, id_camion=$cam_sql, id_centro_destino=$centro_sql WHERE id_ruta=?"
+        );
+        $stmt->bind_param('ssisssi',
+            $data['nombre'], $data['zona'], $numero, $data['descripcion'], $color, $estado, $id
         );
         return $stmt->execute();
     }
@@ -45,11 +57,12 @@ class RutaModel {
 
     public function getAll() {
         $sql = "SELECT r.id_ruta, r.nombre, r.zona, r.numero, r.descripcion, r.color, r.estado,
-                       r.id_conductor, r.id_camion,
+                       r.id_conductor, r.id_camion, r.id_centro_destino,
                        cam.matricula AS camion_matricula, cam.modelo AS camion_modelo, cam.estado AS camion_estado,
                        u_cond.nombre AS conductor_nombre, u_cond.apellido AS conductor_apellido,
                        u_peon.nombre AS peon_nombre, u_peon.apellido AS peon_apellido,
                        cond.id_peon,
+                       ca.nombre AS centro_nombre, ca.ubicacion AS centro_ubicacion,
                        cont.id_contenedor, cont.ubicacion, cont.zona AS zona_contenedor,
                        cont.estado AS estado_contenedor, tr.nombre AS tipo_residuo, cont.orden_en_ruta
                 FROM ruta r
@@ -57,6 +70,7 @@ class RutaModel {
                 LEFT JOIN conductor cond ON r.id_conductor = cond.id_usuario
                 LEFT JOIN usuario u_cond ON r.id_conductor = u_cond.id_usuario
                 LEFT JOIN usuario u_peon ON cond.id_peon = u_peon.id_usuario
+                LEFT JOIN centro_acopio ca ON r.id_centro_destino = ca.id_centro
                 LEFT JOIN contenedor cont ON cont.id_ruta = r.id_ruta
                 LEFT JOIN tipo_residuo tr ON cont.id_tipo_residuo = tr.id_tipo_residuo
                 ORDER BY r.zona, r.numero, cont.orden_en_ruta";
@@ -81,6 +95,8 @@ class RutaModel {
                     'camion'      => $row['camion_matricula'] ? $row['camion_matricula'] . ' - ' . $row['camion_modelo'] : null,
                     'camion_estado' => $row['camion_estado'],
                     'peon'        => $row['peon_nombre'] ? $row['peon_nombre'] . ' ' . $row['peon_apellido'] : null,
+                    'id_centro_destino' => $row['id_centro_destino'],
+                    'centro_destino' => $row['centro_nombre'] ? $row['centro_nombre'] . ' - ' . $row['centro_ubicacion'] : null,
                     'contenedores' => [],
                 ];
             }
