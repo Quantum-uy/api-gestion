@@ -42,18 +42,20 @@ class ContenedorModel
     public function create($data)
     {
         $stmt = mysqli_prepare($this->conn,
-            "INSERT INTO contenedor (ubicacion, zona, estado, id_tipo_residuo)
-             VALUES (?, ?, ?, ?)"
+            "INSERT INTO contenedor (ubicacion, zona, estado, id_tipo_residuo, id_ruta)
+             VALUES (?, ?, ?, ?, ?)"
         );
 
         $estado = $data['estado'] ?? 'funcional';
-        $id_tipo = !empty($data['id_tipo_residuo']) ? $data['id_tipo_residuo'] : null;
+        $id_tipo = !empty($data['id_tipo_residuo']) ? (int)$data['id_tipo_residuo'] : null;
+        $id_ruta = !empty($data['id_ruta']) ? (int)$data['id_ruta'] : null;
 
-        mysqli_stmt_bind_param($stmt, "sssi",
+        mysqli_stmt_bind_param($stmt, "sssii",
             $data['ubicacion'],
             $data['zona'],
             $estado,
-            $id_tipo
+            $id_tipo,
+            $id_ruta
         );
 
         if (mysqli_stmt_execute($stmt)) {
@@ -66,17 +68,19 @@ class ContenedorModel
     public function update($id, $data)
     {
         $stmt = mysqli_prepare($this->conn,
-            "UPDATE contenedor SET ubicacion = ?, zona = ?, estado = ?, id_tipo_residuo = ?
+            "UPDATE contenedor SET ubicacion = ?, zona = ?, estado = ?, id_tipo_residuo = ?, id_ruta = ?
              WHERE id_contenedor = ?"
         );
 
-        $id_tipo = !empty($data['id_tipo_residuo']) ? $data['id_tipo_residuo'] : null;
+        $id_tipo = !empty($data['id_tipo_residuo']) ? (int)$data['id_tipo_residuo'] : null;
+        $id_ruta = !empty($data['id_ruta']) ? (int)$data['id_ruta'] : null;
 
-        mysqli_stmt_bind_param($stmt, "sssii",
+        mysqli_stmt_bind_param($stmt, "sssiii",
             $data['ubicacion'],
             $data['zona'],
             $data['estado'],
             $id_tipo,
+            $id_ruta,
             $id
         );
 

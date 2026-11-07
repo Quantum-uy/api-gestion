@@ -22,7 +22,15 @@ $endpoint = str_replace($basePath, '', $uri);
 
 switch ($method) {
     case 'GET':
-        if ($endpoint === '/tipos-residuo') {
+        if ($endpoint === '/geocode') {
+            $q = $_GET['q'] ?? '';
+            if (!$q) { echo json_encode([]); break; }
+            $url = 'https://nominatim.openstreetmap.org/search?format=json&q=' . urlencode($q) . '&countrycodes=uy&limit=1';
+            $ctx = stream_context_create(['http' => ['header' => "User-Agent: SiGeRU/1.0\r\n", 'timeout' => 5]]);
+            $res = @file_get_contents($url, false, $ctx);
+            header('Content-Type: application/json');
+            echo $res ?: '[]';
+        } elseif ($endpoint === '/tipos-residuo') {
             $result = mysqli_query($conn, "SELECT * FROM tipo_residuo ORDER BY nombre");
             $tipos = [];
             while ($row = mysqli_fetch_assoc($result)) { $tipos[] = $row; }
