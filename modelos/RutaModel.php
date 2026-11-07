@@ -25,7 +25,9 @@ class RutaModel {
             $data['nombre'], $data['zona'], $numero, $data['descripcion'], $color, $estado
         );
         $stmt->execute();
-        return $this->conn->insert_id;
+        $newId = $this->conn->insert_id;
+        $this->syncConductor($id_conductor, $id_camion, $data);
+        return $newId;
     }
 
     public function update($id, $data) {
@@ -46,7 +48,20 @@ class RutaModel {
         $stmt->bind_param('ssisssi',
             $data['nombre'], $data['zona'], $numero, $data['descripcion'], $color, $estado, $id
         );
-        return $stmt->execute();
+        $result = $stmt->execute();
+        $this->syncConductor($id_conductor, $id_camion, $data);
+        return $result;
+    }
+
+    private function syncConductor($id_conductor, $id_camion, $data) {
+        if ($id_camion !== null) {
+            $this->conn->query("UPDATE conductor SET id_camion = NULL WHERE id_camion = " . (int)$id_camion . ($id_conductor !== null ? " AND id_usuario != " . (int)$id_conductor : ""));
+        }
+        if ($id_conductor !== null) {
+            $cam_val = $id_camion !== null ? (int)$id_camion : 'NULL';
+            $peon_val = !empty($data['id_peon']) ? (int)$data['id_peon'] : 'NULL';
+            $this->conn->query("UPDATE conductor SET id_camion = $cam_val, id_peon = $peon_val WHERE id_usuario = " . (int)$id_conductor);
+        }
     }
 
     public function delete($id) {
@@ -94,6 +109,7 @@ class RutaModel {
                     'id_camion'   => $row['id_camion'],
                     'camion'      => $row['camion_matricula'] ? $row['camion_matricula'] . ' - ' . $row['camion_modelo'] : null,
                     'camion_estado' => $row['camion_estado'],
+                    'id_peon'     => $row['id_peon'],
                     'peon'        => $row['peon_nombre'] ? $row['peon_nombre'] . ' ' . $row['peon_apellido'] : null,
                     'id_centro_destino' => $row['id_centro_destino'],
                     'centro_destino' => $row['centro_nombre'] ? $row['centro_nombre'] . ' - ' . $row['centro_ubicacion'] : null,
